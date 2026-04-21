@@ -14,3 +14,7 @@ CFTC（美国商品期货交易委员会）持仓报告 的自动化采集与归
 云端归档 (GitHub Persistence)： 将抓取的原始文本保存为 .txt 文件并推送到你的 GitHub 仓库。
 
 Notion 数据库同步： 在 Notion 中创建一个条目，关联 GitHub 的原始文件链接。
+
+CFTC Concentrate holding
+
+https://www.notion.so/CFTC-Concentrate-holding-2dc47eb5fd3c80e48d59e0d46494752e?source=copy_link
