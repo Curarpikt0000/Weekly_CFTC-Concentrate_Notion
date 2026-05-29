@@ -84,7 +84,7 @@ def process_file_and_notion():
         else:
             parse_status = "MISSING_COMMODITY_MICRO_GOLD"
         
-        cot_json = json.dumps(cot_dict, ensure_ascii=False, separators=(',', ':'))[:1900]
+        cot_json = json.dumps(cot_dict, ensure_ascii=False, separators=(',', ':'))
     except Exception as ex:
         parse_status = f"PARSE_ERROR: {str(ex)}"
     
