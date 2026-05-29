@@ -44,3 +44,11 @@ def test_11_columns_for_positions(cftc_long_pdf):
     for k in ("GOLD", "SILVER", "PLATINUM", "PALLADIUM"):
         assert len(r[k]["positions"]) == 11
         assert len(r[k]["changes"]) == 11
+
+
+def test_cftc_text_format(cftc_long_txt):
+    """文本格式周报必须对账成功且成功解析出 GOLD, SILVER, PLATINUM, MICRO GOLD 为 OK。"""
+    r = parse_cftc_long(str(cftc_long_txt))
+    assert len(r) == 47
+    for k in ("GOLD", "SILVER", "PLATINUM", "MICRO GOLD"):
+        assert k in r and r[k]["status"] == "OK", f"{k}: {r.get(k, {}).get('status')}"

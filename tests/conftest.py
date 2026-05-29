@@ -42,6 +42,11 @@ def cftc_long_pdf() -> Path:
     return FIXTURES / "CFTC_Long_Report.pdf"
 
 
+@pytest.fixture(scope="session")
+def cftc_long_txt() -> Path:
+    return FIXTURES / "CFTC_Metals_Other_Combined_2026-05-19.txt"
+
+
 # —— 已解析结果 fixture(慢的 PDF 只解析一次) ——
 @pytest.fixture(scope="session")
 def section64_result(section64_pdf):

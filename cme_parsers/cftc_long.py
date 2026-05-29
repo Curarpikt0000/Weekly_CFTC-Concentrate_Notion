@@ -111,12 +111,12 @@ def parse_cftc_long(path: str) -> dict:
                     nums = re.findall(r"-?[\d,]+\.[\d]+|-?[\d,]+", dat)
                     if section == "positions":
                         e["oi"] = _INT(pfx)
-                        e["positions"] = [_INT(x) for x in nums]
+                        e["positions"] = [_INT(x) for x in nums[:11]]
                     elif section == "percent":
-                        e["percent"] = [_FLT(x) for x in nums]
+                        e["percent"] = [_FLT(x) for x in nums[:11]]
                     elif section == "traders":
                         e["traders_total"] = _INT(pfx)
-                        e["traders"] = [_INT(x) for x in nums]
+                        e["traders"] = [_INT(x) for x in nums[:11]]
 
             # Changes 行不带 "All" 前缀,而是 ": <OI_chg>: <11 个数字>"
             if section == "changes" and e["changes"] is None:
