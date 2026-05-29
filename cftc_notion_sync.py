@@ -1,7 +1,9 @@
 import os
 import requests
 import re
+import json
 from datetime import datetime
+from cme_parsers.cftc_long import parse_cftc_long
 
 # 环境变量读取
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
@@ -22,7 +24,6 @@ def process_file_and_notion():
     
     if not match:
         print("Error: Could not extract exact date. Data fetch delayed or format changed. Marking as N/A.")
-        # 无法获取最新的确切数值/时间时，停止执行，不进行任何模拟外推
         return
         
     raw_date = match.group(1)
@@ -42,7 +43,38 @@ def process_file_and_notion():
     # 3. 构造 GitHub Raw URL
     github_raw_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{file_path}"
     
-    # 4. 更新 Notion Database
+    # 4. 解析并提取紧凑 JSON 字段
+    parse_status = "OK"
+    cot_json = None
+    try:
+        print(f"Parsing CFTC report file: {file_path}")
+        parsed_data = parse_cftc_long(file_path)
+        
+        # 筛选 GOLD, SILVER, PLATINUM, PALLADIUM, COPPER
+        cot_dict = {}
+        target_keys = ["GOLD", "SILVER", "PLATINUM", "PALLADIUM"]
+        for tk in target_keys:
+            if tk in parsed_data:
+                cot_dict[tk] = parsed_data[tk]
+                if parsed_data[tk].get("status") != "OK":
+                    parse_status = f"PARSE_FAILED ({tk}): {parsed_data[tk].get('status')}"
+            else:
+                parse_status = f"MISSING_COMMODITY_{tk}"
+        
+        # 铜特殊匹配 (通常包含 COPPER - COMMODITY EXCHANGE INC. 等)
+        copper_key = next((k for k in parsed_data if k.startswith("COPPER")), None)
+        if copper_key:
+            cot_dict["COPPER"] = parsed_data[copper_key]
+            if parsed_data[copper_key].get("status") != "OK":
+                parse_status = f"PARSE_FAILED (COPPER): {parsed_data[copper_key].get('status')}"
+        else:
+            parse_status = "MISSING_COMMODITY_COPPER"
+        
+        cot_json = json.dumps(cot_dict, ensure_ascii=False, separators=(',', ':'))[:1900]
+    except Exception as ex:
+        parse_status = f"PARSE_ERROR: {str(ex)}"
+    
+    # 5. 更新 Notion Database
     notion_api_url = "https://api.notion.com/v1/pages"
     headers = {
         "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -67,13 +99,22 @@ def process_file_and_notion():
                         "external": {"url": github_raw_url}
                     }
                 ]
+            },
+            "Parse Status": {
+                "rich_text": [{"text": {"content": parse_status[:1900]}}]
             }
         }
     }
     
+    # 只有当解析成功时，才回填 COT (JSON) (失败时 omit)
+    if parse_status == "OK" and cot_json is not None:
+        payload["properties"]["COT (JSON)"] = {
+            "rich_text": [{"text": {"content": cot_json}}]
+        }
+    
     res = requests.post(notion_api_url, headers=headers, json=payload)
     if res.status_code == 200:
-        print(f"Successfully created Notion record for {parsed_date}!")
+        print(f"Successfully created Notion record for {parsed_date}! Status: {parse_status}")
     else:
         print(f"Failed to update Notion: {res.text}")
 
