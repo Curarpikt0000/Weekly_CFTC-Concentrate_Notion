@@ -50,9 +50,9 @@ def process_file_and_notion():
         print(f"Parsing CFTC report file: {file_path}")
         parsed_data = parse_cftc_long(file_path)
         
-        # 筛选 GOLD, SILVER, PLATINUM, PALLADIUM, COPPER
+        # 筛选 GOLD, SILVER, PLATINUM
         cot_dict = {}
-        target_keys = ["GOLD", "SILVER", "PLATINUM", "PALLADIUM"]
+        target_keys = ["GOLD", "SILVER", "PLATINUM"]
         for tk in target_keys:
             if tk in parsed_data:
                 cot_dict[tk] = parsed_data[tk]
@@ -61,14 +61,14 @@ def process_file_and_notion():
             else:
                 parse_status = f"MISSING_COMMODITY_{tk}"
         
-        # 铜特殊匹配 (通常包含 COPPER - COMMODITY EXCHANGE INC. 等)
-        copper_key = next((k for k in parsed_data if k.startswith("COPPER")), None)
-        if copper_key:
-            cot_dict["COPPER"] = parsed_data[copper_key]
-            if parsed_data[copper_key].get("status") != "OK":
-                parse_status = f"PARSE_FAILED (COPPER): {parsed_data[copper_key].get('status')}"
+        # MICRO GOLD 特殊匹配
+        micro_gold_key = next((k for k in parsed_data if k.startswith("MICRO GOLD")), None)
+        if micro_gold_key:
+            cot_dict["MICRO GOLD"] = parsed_data[micro_gold_key]
+            if parsed_data[micro_gold_key].get("status") != "OK":
+                parse_status = f"PARSE_FAILED (MICRO GOLD): {parsed_data[micro_gold_key].get('status')}"
         else:
-            parse_status = "MISSING_COMMODITY_COPPER"
+            parse_status = "MISSING_COMMODITY_MICRO_GOLD"
         
         cot_json = json.dumps(cot_dict, ensure_ascii=False, separators=(',', ':'))[:1900]
     except Exception as ex:
