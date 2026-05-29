@@ -50,23 +50,37 @@ def process_file_and_notion():
         print(f"Parsing CFTC report file: {file_path}")
         parsed_data = parse_cftc_long(file_path)
         
-        # 筛选 GOLD, SILVER, PLATINUM
+        # 筛选并压缩 GOLD, SILVER, PLATINUM (只保留核心字段，避免 Notion 1900 字符限制导致被截断)
         cot_dict = {}
         target_keys = ["GOLD", "SILVER", "PLATINUM"]
         for tk in target_keys:
             if tk in parsed_data:
-                cot_dict[tk] = parsed_data[tk]
-                if parsed_data[tk].get("status") != "OK":
-                    parse_status = f"PARSE_FAILED ({tk}): {parsed_data[tk].get('status')}"
+                orig_item = parsed_data[tk]
+                if orig_item.get("status") != "OK":
+                    parse_status = f"PARSE_FAILED ({tk}): {orig_item.get('status')}"
+                cot_dict[tk] = {
+                    "oi": orig_item.get("oi"),
+                    "oi_change": orig_item.get("oi_change"),
+                    "traders_total": orig_item.get("traders_total"),
+                    "concentration": orig_item.get("concentration"),
+                    "status": orig_item.get("status")
+                }
             else:
                 parse_status = f"MISSING_COMMODITY_{tk}"
         
-        # MICRO GOLD 特殊匹配
+        # MICRO GOLD 特殊匹配与压缩
         micro_gold_key = next((k for k in parsed_data if k.startswith("MICRO GOLD")), None)
         if micro_gold_key:
-            cot_dict["MICRO GOLD"] = parsed_data[micro_gold_key]
-            if parsed_data[micro_gold_key].get("status") != "OK":
-                parse_status = f"PARSE_FAILED (MICRO GOLD): {parsed_data[micro_gold_key].get('status')}"
+            orig_item = parsed_data[micro_gold_key]
+            if orig_item.get("status") != "OK":
+                parse_status = f"PARSE_FAILED (MICRO GOLD): {orig_item.get('status')}"
+            cot_dict["MICRO GOLD"] = {
+                "oi": orig_item.get("oi"),
+                "oi_change": orig_item.get("oi_change"),
+                "traders_total": orig_item.get("traders_total"),
+                "concentration": orig_item.get("concentration"),
+                "status": orig_item.get("status")
+            }
         else:
             parse_status = "MISSING_COMMODITY_MICRO_GOLD"
         
